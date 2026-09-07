@@ -1,54 +1,84 @@
 from pyscript import document, window
-from pyodide.ffi import to_js
-import asyncio
 
-video = document.getElementById("camera-feed")
-canvas = document.getElementById("snapshot-canvas")
-ctx = canvas.getContext("2d")
+# ตัวแปรสำหรับเก็บรายชื่อและคะแนน (List of Dictionaries)
+students_data = []
 
-rgb_text = document.getElementById("rgb-value")
-hex_text = document.getElementById("hex-value")
-color_preview = document.getElementById("color-preview")
-
-async def start_video(event):
-    try:
-        # ขอสิทธิ์เข้าถึงกล้อง (บังคับเปิดกล้องหลังถ้าใช้งานบนมือถือ)
-        constraints = to_js({"video": {"facingMode": "environment"}})
-        
-        # เรียกใช้ Web API ของเบราว์เซอร์
-        stream = await window.navigator.mediaDevices.getUserMedia(constraints)
-        video.srcObject = stream
-    except Exception as e:
-        window.alert("ไม่สามารถเปิดกล้องได้ โปรดตรวจสอบการอนุญาตใช้งานกล้องบนเบราว์เซอร์ของคุณ")
-
-def pick_color(event):
-    # ตรวจสอบว่ากล้องเปิดและส่งภาพมาแล้วหรือไม่
-    if not video.videoWidth:
+def update_dashboard():
+    # หากไม่มีข้อมูลให้รีเซ็ตหน้าจอเป็น 0
+    if not students_data:
+        document.getElementById("count").innerText = "0"
+        document.getElementById("avg").innerText = "0.00"
+        document.getElementById("max").innerText = "0"
+        document.getElementById("min").innerText = "0"
         return
 
-    # 1. กำหนดขนาด Canvas ให้เท่ากับวิดีโอ
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    # 2. วาดเฟรมภาพปัจจุบันจากวิดีโอลงใน Canvas แบบซ่อน
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-    # 3. คำนวณพิกัดแกน X, Y ที่ถูกคลิก โดยเทียบสัดส่วนหน้าจอกับขนาดวิดีโอจริง
-    rect = video.getBoundingClientRect()
-    scale_x = canvas.width / rect.width
-    scale_y = canvas.height / rect.height
+    # ดึงเฉพาะตัวเลขคะแนนออกมาคำนวณ
+    scores = [s["score"] for s in students_data]
     
-    x = (event.clientX - rect.left) * scale_x
-    y = (event.clientY - rect.top) * scale_y
+    total_students = len(scores)
+    avg_score = sum(scores) / total_students
+    max_score = max(scores)
+    min_score = min(scores)
 
-    # 4. ดึงข้อมูลพิกเซล (Red, Green, Blue, Alpha) ในตำแหน่ง 1x1 พิกเซล
-    pixel = ctx.getImageData(x, y, 1, 1).data
-    r, g, b = pixel[0], pixel[1], pixel[2]
+    # แสดงผลบนแดชบอร์ด
+    document.getElementById("count").innerText = str(total_students)
+    document.getElementById("avg").innerText = f"{avg_score:.2f}"
+    document.getElementById("max").innerText = str(max_score)
+    document.getElementById("min").innerText = str(min_score)
+
+def update_table():
+    tbody = document.getElementById("table-body")
+    tbody.innerHTML = "" 
     
-    # 5. แปลงค่าสีเป็นระบบฐาน 16 (HEX Code)
-    hex_code = f"#{r:02x}{g:02x}{b:02x}".upper()
+    # วนลูปสร้างแถวข้อมูลในตาราง
+    for index, student in enumerate(students_data):
+        score = student["score"]
+        # กำหนดเงื่อนไขผ่านเกณฑ์ที่ 50 คะแนน
+        status = "✅ ผ่าน" if score >= 50 else "❌ ไม่ผ่าน"
+        color = "green" if score >= 50 else "red"
+        
+        row_html = f"""
+        <tr>
+            <td>{index + 1}</td>
+            <td>{student["name"]}</td>
+            <td>{score}</td>
+            <td style="color: {color}; font-weight: bold;">{status}</td>
+        </tr>
+        """
+        tbody.innerHTML += row_html
+
+def add_score(event):
+    name_input = document.getElementById("student-name")
+    score_input = document.getElementById("student-score")
     
-    # 6. อัปเดตผลลัพธ์ลงบนหน้าเว็บ
-    rgb_text.innerText = f"{r}, {g}, {b}"
-    hex_text.innerText = hex_code
-    color_preview.style.backgroundColor = hex_code
+    name = name_input.value.strip()
+    score_text = score_input.value.strip()
+    
+    if not name or not score_text:
+        window.alert("กรุณากรอกชื่อและคะแนนให้ครบถ้วน")
+        return
+        
+    try:
+        score = float(score_text)
+        if score < 0 or score > 100:
+            window.alert("กรุณากรอกคะแนนระหว่าง 0 - 100")
+            return
+            
+        students_data.append({"name": name, "score": score})
+        
+        # ล้างช่องข้อความหลังบันทึกเสร็จ
+        name_input.value = ""
+        score_input.value = ""
+        
+        # สั่งรีเฟรชข้อมูล
+        update_table()
+        update_dashboard()
+        
+    except ValueError:
+        window.alert("คะแนนต้องเป็นตัวเลขเท่านั้น")
+
+def clear_data(event):
+    if window.confirm("ต้องการลบข้อมูลทั้งหมดใช่หรือไม่?"):
+        students_data.clear()
+        update_table()
+        update_dashboard()
