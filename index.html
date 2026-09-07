@@ -3,39 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แอปตรวจสอบสีผ่านกล้อง</title>
+    <title>ระบบวิเคราะห์คะแนนสอบ</title>
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
     <style>
-        body { font-family: 'Tahoma', sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
-        #video-container { position: relative; display: inline-block; margin-top: 15px; }
-        video { border: 4px solid #333; border-radius: 10px; width: 100%; max-width: 400px; cursor: crosshair; background: #000; }
-        canvas { display: none; } /* ซ่อนไว้ใช้ประมวลผลภาพหลังบ้าน */
-        .result-box { margin-top: 20px; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: inline-block; min-width: 300px; }
-        #color-preview { width: 100px; height: 100px; border-radius: 50%; margin: 10px auto; border: 2px solid #ddd; background-color: #ffffff; }
-        button { padding: 12px 24px; font-size: 16px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #1976D2; }
+        body { font-family: 'Tahoma', sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex: 1; min-width: 150px; }
+        button { padding: 10px 20px; background-color: #0288d1; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0277bd; }
+        .btn-danger { background-color: #d32f2f; }
+        .btn-danger:hover { background-color: #c62828; }
+        .dashboard { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;}
+        .card { background: #4caf50; color: white; padding: 15px; border-radius: 8px; flex: 1; text-align: center; min-width: 120px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
-    <h1>🔍 ตรวจสอบสีผ่านกล้อง</h1>
-    <p>กดปุ่มเปิดกล้อง (อนุญาตให้เว็บใช้กล้อง) แล้วคลิกที่ภาพเพื่อดูค่าสี</p>
+    <div class="container">
+        <h1 style="text-align: center;">📊 แดชบอร์ดวิเคราะห์คะแนนสอบ</h1>
+        
+        <div class="dashboard">
+            <div class="card" style="background:#0288d1;">จำนวน นร.<br><h2 id="count">0</h2></div>
+            <div class="card" style="background:#ff9800;">คะแนนเฉลี่ย<br><h2 id="avg">0.00</h2></div>
+            <div class="card" style="background:#4caf50;">คะแนนสูงสุด<br><h2 id="max">0</h2></div>
+            <div class="card" style="background:#d32f2f;">คะแนนต่ำสุด<br><h2 id="min">0</h2></div>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="student-name" placeholder="ชื่อ-นามสกุล">
+            <input type="number" id="student-score" placeholder="คะแนน">
+            <button id="add-btn" py-click="add_score">บันทึกข้อมูล</button>
+            <button class="btn-danger" id="clear-btn" py-click="clear_data">ล้างทั้งหมด</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ลำดับ</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>คะแนน</th>
+                    <th>สถานะ (เกณฑ์ 50)</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- ข้อมูลตารางจะถูกสร้างโดย Python -->
+            </tbody>
+        </table>
+    </div>
     
-    <button id="start-camera" py-click="start_video">เปิดกล้อง</button>
-
-    <div id="video-container">
-        <!-- วิดีโอสำหรับแสดงภาพสดจากกล้อง -->
-        <video id="camera-feed" autoplay playsinline py-click="pick_color"></video>
-        <!-- Canvas สำหรับดึงข้อมูลพิกเซล -->
-        <canvas id="snapshot-canvas"></canvas>
-    </div>
-
-    <div class="result-box">
-        <div id="color-preview"></div>
-        <h3>ค่าสี (RGB): <span id="rgb-value">-</span></h3>
-        <h3>โค้ดสี (HEX): <span id="hex-value">-</span></h3>
-    </div>
-
     <script type="py" src="./main.py" config="./pyscript.toml"></script>
 </body>
 </html>
